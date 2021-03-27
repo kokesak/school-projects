@@ -1,0 +1,24 @@
+DNS Resolver posílá dotazy na server a vypisuje získané informace.
+
+Seznam souborů:
+    dns.cpp
+    Makefile
+
+Pro přeložení stačí zavolat příkaz "make"
+
+Použití: ./dns [-r] [-x] [-6] -s server [-p port] adresa
+
+Pořadí parametrů je libovolné. Popis parametrů:
+
+    -r: Požadována rekurze (Recursion Desired = 1), jinak bez rekurze.
+    -x: Reverzní dotaz místo přímého.
+    -6: Dotaz typu AAAA místo výchozího A.
+    -s: IP adresa nebo doménové jméno serveru, kam se má zaslat dotaz.
+    -p port: Číslo portu, na který se má poslat dotaz, výchozí 53.
+    adresa: Dotazovaná adresa.
+
+Příklad použití:
+    ./dns -r -s dns.google.com www.seznam.cz
+
+Exit status 0 = OK
+Exit status 1 = Error

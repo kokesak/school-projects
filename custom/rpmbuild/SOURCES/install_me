@@ -1,0 +1,29 @@
+#!/bin/bash
+#install file
+
+MY_DEST_DIR=""
+MY_PREFIX=""
+
+if test -n "$DESTDIR"; then
+    MY_DEST_DIR+="$DESTDIR/"
+else
+    MY_DEST_DIR+="/"
+fi
+
+if test "$MY_DEST_DIR" == "/"; then
+    if test "$(id -u)" != 0; then
+        echo "You must be root in order to install salina!" >&2
+        exit 2
+    fi
+fi
+
+if test -n "$PREFIX"; then
+    MY_PREFIX+="$PREFIX/"
+else
+    MY_PREFIX="/usr/local"
+fi
+
+mkdir -p "$MY_DEST_DIR/$MY_PREFIX/bin"
+cp salina "$MY_DEST_DIR/$MY_PREFIX/bin"
+chmod +x "$MY_DEST_DIR/$MY_PREFIX/bin/salina"
+

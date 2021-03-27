@@ -1,0 +1,246 @@
+#!/bin/sh
+#
+#	1.) projekt IOS 	
+#	autor: Martin Litwora
+#	datum: 28.03.2018
+#
+#
+
+POSIXLY_CORRECT=yes
+
+
+#zjistuje zda je promenna nastavena
+if [ -z $WEDI_RC ]; then 
+	echo "WEDI_RC not set" >&2
+	exit 1 
+fi
+
+if [ ! -f "$WEDI_RC" ]; then
+	mkdir -p "$(dirname $WEDI_RC)"
+	touch $WEDI_RC
+fi
+
+
+#zjisteni zda existuje utilita realpath
+command -v realpath > /dev/null
+if [ $? -ne 0 ]; then
+	echo "realpath does not exist" >&2
+	exit 1
+fi
+
+#vytvori zaznam v souboru, jehoz cesta je v $WEDI_RC
+new_log( )
+{
+	datum="$(date '+%Y%m%d')"	
+	echo "$1#$datum" >> $WEDI_RC
+}
+
+#spocita celkovy pocet logu
+count_log( )
+{
+	echo "$(grep -c $1 $WEDI_RC)"
+}
+
+#ziska adresu 
+get_adres( )
+{
+	echo "$(sed -n ${1}p $WEDI_RC | grep -o "^.*#" | grep -o ".*[^#]")"
+}
+#echo adresa je: $(get_adres "14")
+
+
+get_date( )
+{
+	echo "$(sed -n ${1}p $WEDI_RC | grep -o "#.*" | grep -o "[^#].*" )"
+}
+
+#vypise posledni editovany
+last_edited( )
+{	
+	pocet="$(count_log "^.*#")"
+	last_d="19700101"
+		
+	for (( i=1; i<=$pocet; i++ ))
+	do
+		if [ -n "$(sed -n ${i}p $WEDI_RC | grep -o $1".[^/]*#")" ]; then		
+		if [ "$(get_date "$i")" -ge $last_d ]; then 
+				last_d="$(get_date "$i")"
+				last_a="$(get_adres "$i")"
+			fi
+		fi	
+
+
+
+	done
+	if [ -f $last_a ]; then	
+		echo $last_a	
+	else
+		echo "last edited file does not exist" >&2
+		exit 1
+	fi
+}
+
+#vybere nejcasteji uzivany soubor v adresari
+most_edited( )
+{
+
+	echo "$(grep -o $1".[^/]*#" $WEDI_RC | sort | uniq -c | sort | tail -n 1 | grep -o $1".*" | grep -o ".*[^#]")"
+
+
+}
+
+#vypise vsechny editovatelne soubory v adresari(musi byt zapsany v logu)
+list( )
+{
+	pocet="$(grep -o $1".*" $WEDI_RC | sort | uniq | wc -l)"
+	for (( i=1; i<=$pocet; i++))
+	do
+		soubor="$(grep -o $1".[^/]*#" $WEDI_RC | sort | uniq | sed -n ${i}p | grep -o ".*[^#]")"
+		if [ -f "$soubor" ]; then
+			echo "$( echo "$soubor" | grep -o "[^/]*$")"  #vytiskne jen soubor konkretni
+		fi
+	done
+
+
+
+}
+
+#vypise soubory po danem case editovani(vcetne)
+after( )
+{
+	pocet="$(grep -o $1".*" $WEDI_RC | sort | uniq | wc -l)"  #pocet polozek v adresari
+	for (( i=1; i<=$pocet; i++))
+	do
+		soubor="$(grep -o $1".[^/]*" $WEDI_RC | sort | uniq | sed -n ${i}p)"
+		cas="$(echo $soubor | grep -o "#.*" | grep -o "[^#].*")"
+		if [ $cas ] && [ $cas -ge $2  ]; then		
+			echo "$(echo $soubor | grep -o "^.*#" | grep -o ".*[^#]" |  grep -o "[^/]*$")"
+		fi
+	done
+
+
+
+}
+
+
+before( )
+{
+	pocet="$(grep -o $1".*" $WEDI_RC | sort | uniq | wc -l)"  #pocet polozek v adresari
+	for (( i=1; i<=$pocet; i++))
+	do
+		soubor="$(grep -o $1".[^/]*" $WEDI_RC | sort | uniq | sed -n ${i}p)"
+		cas="$(echo $soubor | grep -o "#.*" | grep -o "[^#].*")"
+		if [ $cas ] && [ $cas -lt $2  ]; then		
+			echo "$(echo $soubor | grep -o "^.*#" | grep -o ".*[^#]" |  grep -o "[^/]*$")"
+		fi
+	done
+
+
+
+}
+
+
+#MAIN:
+EDITOR=${EDITOR=${VISUAL=vi}}
+
+
+#[SUBOR]
+if [ $# = "1" ] && [ -f $1 ]; then
+	adresa="$(realpath "$1")"
+	new_log "$adresa" 
+	$EDITOR "$adresa"
+	exit $?
+
+elif [ $# = "1" ] && [ -d $1 ]; then
+	adresa="$(last_edited "$(realpath "$1")")"
+	if [ $? -ne 1 ] && [ -f $adresa ]; then
+		new_log "$adresa"		
+		$EDITOR "$adresa"
+		exit $?
+	else
+		exit 1
+	fi
+
+#zadnej argument
+elif [ $# = "0" ]; then
+	adresa="$(last_edited "$(pwd)")"
+	if [ $? -ne 1 ] && [ -f $adresa ]; then
+		new_log "$adresa"		
+		$EDITOR "$adresa"
+		exit $?
+	else
+		echo "chyba" >&2
+		exit 1
+	fi
+elif [ $1 = "-m" ]; then
+	if [ $# = "2" ] && [ -d $2 ]; then
+		adresa="$(realpath "$2")"
+	else
+		adresa="$(pwd)"
+	fi
+	adresa="$(most_edited "$adresa")"
+	if [ -f $adresa ]; then
+		new_log "$adresa"
+		$EDITOR "$adresa"
+		exit $?
+	else
+		echo "error most_edited not exist" >&2
+		exit 1
+	fi
+
+elif [ $1 = "-l" ]; then
+	if [ $# = "2" ] && [ -d "$2" ]; then
+		adresa="$(realpath "$2")"
+	else
+		adresa="$(pwd)"
+	fi
+	list $adresa
+	
+elif [ $1 = "-a" ]; then
+	if [ $# = 3 ] && [ -d "$3" ]; then
+		adresa="$(realpath "$3")"
+	elif [ $# = 2 ]; then
+		adresa="$(pwd)"
+	else
+		echo "spatny parametr" >&2
+		exit 1
+	fi
+	
+	if [ "$( after "$adresa" "$(echo $2 | tr -d "-")" | sort | uniq)" ]; then
+		echo "$( after "$adresa" "$(echo $2 | tr -d "-")" | sort | uniq)"
+	else 
+		echo "nothing to display"
+		exit 0	
+	fi
+	
+elif [ $1 = "-b" ]; then
+	if [ $# = 3 ] && [ -d "$3" ]; then
+		adresa="$(realpath "$3")"
+	elif [ $# = 2 ]; then
+		adresa="$(pwd)"
+	else
+		echo "spatny parametr" >&2
+		exit 1
+	fi
+	
+	if [ "$( before "$adresa" "$(echo $2 | tr -d "-")" | sort | uniq)" ]; then
+		echo "$( before "$adresa" "$(echo $2 | tr -d "-")" | sort | uniq)"
+	else 
+		echo "nothing to display"
+		exit 0	
+	fi
+
+elif [ $# = "1" ]; then
+	adresa="$(realpath "$1")"
+	new_log "$adresa" 
+	$EDITOR "$adresa"
+	exit $?
+
+
+
+else
+	echo "Spatne zadany argument" >&2
+	exit 1
+fi
+
+exit 0

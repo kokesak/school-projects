@@ -1,0 +1,28 @@
+{
+  "id": "83806b07-3b3e-4d1a-a43b-68826139a325",
+  "version": "2.0",
+  "name": "test",
+  "url": "",
+  "tests": [{
+    "id": "01938cb1-0215-46a5-9412-b01d4f8d56b4",
+    "name": "Untitled",
+    "commands": [{
+      "id": "cb93e689-e5b7-47e9-855c-5bd3f9dec9d8",
+      "comment": "",
+      "command": "sendKeys",
+      "target": "name=q",
+      "targets": [],
+      "value": "cheese"
+    }]
+  }],
+  "suites": [{
+    "id": "01e2f2c2-529b-4ef6-b74b-3cdbd09b0601",
+    "name": "Default Suite",
+    "persistSession": false,
+    "parallel": false,
+    "timeout": 300,
+    "tests": ["01938cb1-0215-46a5-9412-b01d4f8d56b4"]
+  }],
+  "urls": [],
+  "plugins": []
+}
