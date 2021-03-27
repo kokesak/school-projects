@@ -1,8 +1,0 @@
-#!/bin/sh
-#
-#
-#
-
-HOST=$(hostname)
-TIME=$(date)
-$(sed "s/___HOSTNAME___/$HOST/; s/___DATE_OF_BUILD___/$TIME/" <salina.skel >salina)
